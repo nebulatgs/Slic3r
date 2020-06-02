@@ -28,7 +28,12 @@ if ($cpp_guess->is_gcc)	{
 }
 
 # std=c++11 Enforce usage of C++11 (required now). Minimum compiler supported: gcc 4.9, clang 3.3, MSVC 14.0
-push @cflags, qw(-std=c++11);
+if ($cpp_guess->is_gcc)	{
+	# GCC is pedantic with c++11 std, so use -std=gnu++11 to be able to use M_PI
+	push @cflags, qw(-std=gnu++11);
+} else {
+	push @cflags, qw(-std=c++11);
+}
 
 my @ldflags = ();
 
