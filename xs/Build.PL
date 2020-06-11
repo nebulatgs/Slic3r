@@ -15,11 +15,10 @@ my $linux = $^O eq 'linux';
 # prevent an annoying concatenation warning by Devel::CheckLib
 $ENV{LD_RUN_PATH} //= "";
 
-# _GLIBCXX_USE_C99 : to get the long long type for g++
 # HAS_BOOL         : stops Perl/lib/CORE/handy.h from doing "#  define bool char" for MSVC
 # NOGDI            : prevents inclusion of wingdi.h which defines functions Polygon() and Polyline() in global namespace
 # BOOST_ASIO_DISABLE_KQUEUE : prevents a Boost ASIO bug on OS X: https://svn.boost.org/trac/boost/ticket/5339
-my @cflags = qw(-D_GLIBCXX_USE_C99 -DHAS_BOOL -DNOGDI -DSLIC3RXS -DBOOST_ASIO_DISABLE_KQUEUE -Dexprtk_disable_rtl_io_file -Dexprtk_disable_return_statement -Dexprtk_disable_rtl_vecops -Dexprtk_disable_string_capabilities -Dexprtk_disable_enhanced_features);
+my @cflags = qw(-DHAS_BOOL -DNOGDI -DSLIC3RXS -DBOOST_ASIO_DISABLE_KQUEUE -Dexprtk_disable_rtl_io_file -Dexprtk_disable_return_statement -Dexprtk_disable_rtl_vecops -Dexprtk_disable_string_capabilities -Dexprtk_disable_enhanced_features);
 if ($cpp_guess->is_gcc)	{
 	# GCC is pedantic with c++11 std, so undefine strict ansi to get M_PI back
 	push @cflags, qw(-U__STRICT_ANSI__);
