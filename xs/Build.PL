@@ -15,11 +15,10 @@ my $linux = $^O eq 'linux';
 # prevent an annoying concatenation warning by Devel::CheckLib
 $ENV{LD_RUN_PATH} //= "";
 
-# _GLIBCXX_USE_C99 : to get the long long type for g++
 # HAS_BOOL         : stops Perl/lib/CORE/handy.h from doing "#  define bool char" for MSVC
 # NOGDI            : prevents inclusion of wingdi.h which defines functions Polygon() and Polyline() in global namespace
 # BOOST_ASIO_DISABLE_KQUEUE : prevents a Boost ASIO bug on OS X: https://svn.boost.org/trac/boost/ticket/5339
-my @cflags = qw(-D_GLIBCXX_USE_C99 -DHAS_BOOL -DNOGDI -DSLIC3RXS -DBOOST_ASIO_DISABLE_KQUEUE -Dexprtk_disable_rtl_io_file -Dexprtk_disable_return_statement -Dexprtk_disable_rtl_vecops -Dexprtk_disable_string_capabilities -Dexprtk_disable_enhanced_features);
+my @cflags = qw(-DHAS_BOOL -DNOGDI -DSLIC3RXS -DBOOST_ASIO_DISABLE_KQUEUE -Dexprtk_disable_rtl_io_file -Dexprtk_disable_return_statement -Dexprtk_disable_rtl_vecops -Dexprtk_disable_string_capabilities -Dexprtk_disable_enhanced_features);
 if ($cpp_guess->is_gcc)	{
 	# GCC is pedantic with c++11 std, so undefine strict ansi to get M_PI back
 	push @cflags, qw(-U__STRICT_ANSI__);
@@ -28,7 +27,12 @@ if ($cpp_guess->is_gcc)	{
 }
 
 # std=c++11 Enforce usage of C++11 (required now). Minimum compiler supported: gcc 4.9, clang 3.3, MSVC 14.0
-push @cflags, qw(-std=c++11);
+if ($cpp_guess->is_gcc)	{
+	# GCC is pedantic with c++11 std, so use -std=gnu++11 to be able to use M_PI
+	push @cflags, qw(-std=gnu++11);
+} else {
+	push @cflags, qw(-std=c++11);
+}
 
 my @ldflags = ();
 
@@ -144,18 +148,27 @@ if (defined $ENV{BOOST_LIBRARYPATH}) {
 }
 # In order to generate the -l switches we need to know how Boost libraries are named
 my $have_boost = 0;
+my $have_boost_optional = 0;
 my @boost_libraries = qw(system thread filesystem);  # we need these
+my @boost_optional_libraries = qw(nowide);  # we need these, but if they aren't present we can deal
 # check without explicit lib path (works on Linux)
 if (! $mswin) {
     $have_boost = 1
         if check_lib(
             lib     => [ map "boost_${_}", @boost_libraries ],
         );
+    $have_boost_optional = 1
+        if check_lib(
+            lib     => [ map "boost_${_}", @boost_optional_libraries ],
+        );
 }
 
 if (!$ENV{SLIC3R_STATIC} && $have_boost) {
     # The boost library was detected by check_lib on Linux.
     push @LIBS, map "-lboost_${_}", @boost_libraries;
+    if (!$ENV{SLIC3R_STATIC} && $have_boost_optional) {
+        push @LIBS, map "-lboost_${_}", @boost_optional_libraries;
+    }
 } else {
     # Either static linking, or check_lib could not be used to find the boost libraries.
     my $lib_prefix = 'libboost_';
