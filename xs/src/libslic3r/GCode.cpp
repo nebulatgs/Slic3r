@@ -631,6 +631,7 @@ GCode::_extrude(ExtrusionPath path, std::string description, double speed)
     // calculate extrusion length per distance unit
     double e_per_mm = this->writer.extruder()->e_per_mm3 * path.mm3_per_mm;
     if (this->writer.extrusion_axis().empty()) e_per_mm = 0;
+    if (EXTRUDER_CONFIG(pneumatic_extruder)) e_per_mm = 0;
     
     // set speed
     if (speed == -1) {
@@ -819,8 +820,10 @@ GCode::retract(bool toolchange)
         return gcode;
 
     // air pressure extruder, no retraction possible
-    if(EXTRUDER_CONFIG(pneumatic_extruder))
-       return gcode;
+    if(EXTRUDER_CONFIG(pneumatic_extruder)) {
+        gcode += this->writer.lift();
+        return gcode;
+    }
     
     // wipe (if it's enabled for this extruder and we have a stored wipe path)
     if (EXTRUDER_CONFIG(wipe) && this->wipe.has_path()) {
@@ -845,11 +848,12 @@ GCode::unretract()
 {
     std::string gcode;
 
+    gcode += this->writer.unlift();
+
     // air pressure extruder, no unretraction possible
     if(EXTRUDER_CONFIG(pneumatic_extruder))
         return gcode;
 
-    gcode += this->writer.unlift();
     gcode += this->writer.unretract();
     return gcode;
 }
